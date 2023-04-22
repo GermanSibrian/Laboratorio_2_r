@@ -1,0 +1,108 @@
+UNIVERSIDAD DE SAN CARLOS DE GUATEMALA
+FACULTAD DE INGENIERÍA
+ESCUELA DE ESTUDIOS DE POSTGRADO
+MAESTRÍA EN INGENIERÍA PARA LA INDUSTRIA CON ESPECIALIZACIÓN EN CIENCIAS DE LA COMPUTACIÓN
+CURSO: Fundamentos de Programación y Scripting
+ESTUDIANTE: German Omar Chiguichón Sibrian
+
+```{r}
+library(nycflights13)
+library(dplyr)
+library(tidyr)
+library(tidyverse)
+library(ggplot2)
+View(flights)
+View(airports)
+View(planes)
+View(airlines)
+View(weather)
+```
+
+1. Inner-join
+
+```{r}
+flights
+planes
+
+#1.1
+
+flights%>%
+  inner_join(planes, by="tailnum")
+
+#1.2
+ 
+flights%>%
+   inner_join(airlines, by="carrier")
+ 
+#1.3
+
+flights%>%
+   inner_join(airports, by=c("origin"="faa")) %>%
+   inner_join(airports, by=c("dest"="faa"), suffix=c("_origin","_dest"))
+ 
+#1.4
+
+flights%>%
+   inner_join(weather, by=c("year", "month", "day", "hour", "origin"))
+```
+
+2.Data manipulation
+
+```{r}
+#2.1
+
+flights %>%
+  count(year, month, day)%>%
+  filter(n > 1000)%>%
+  arrange(n)
+
+#2.2
+
+flights_select <-flights %>%
+  select(year:day, hour, origin, dest, tailnum, carrier, arr_delay, dep_delay)
+flights_select
+
+#2.3
+
+airlines%>%
+  left_join(flights_select, by="carrier")%>%
+  select(-origin, -dest) %>%
+  mutate(tot_delay=arr_delay+dep_delay)
+
+#2.4
+
+precip_delay <- flights%>%
+  inner_join(weather, by=c("year", "month", "day", "hour", "origin"))%>%
+  group_by(precip)%>%
+  summarize(delay = mean(dep_delay, na.rm = T))%>%
+  replace_na(list(delay=0))
+precip_delay
+
+#2.5
+
+ggplot(precip_delay, aes(x=precip, y=delay)) +
+  geom_point()
+
+#2.6
+
+flights_airports <- flights %>%
+  filter(year==2013, month==5, day==10)%>%
+  group_by(dest) %>%
+  summarize(delay = mean(arr_delay, na.rm = T))%>%
+  inner_join(airports, by=c("dest"="faa"))
+
+flights_airports
+
+#2.7
+
+ggplot(flights_airports, aes(x=lon, y=lat, color=delay, size=delay))  +
+  geom_point()
+
+#2.8
+
+flights%>%
+  inner_join(planes,by="tailnum",
+suffix=c("_flights","_planes")) %>%
+  transmute(tailnum, manufacturer, pi = (dep_delay+arr_delay)/air_time)
+```
+
